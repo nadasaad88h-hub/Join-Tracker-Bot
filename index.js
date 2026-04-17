@@ -4,69 +4,75 @@ const { Client, GatewayIntentBits } = require("discord.js");
 
 // ───────── CONFIG ─────────
 const TOKEN = process.env.DISCORD_TOKEN;
-const COUNT_CHANNEL_ID = "1494238876829483078";
+const JOIN_CHANNEL = process.env.JOIN_CHANNEL_ID;
 
-// ───────── CLIENT ─────────
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
 });
 
-// ───────── STATE ─────────
-let currentNumber = 0;
-let lastUserId = null;
-
 // ───────── READY ─────────
 client.once("ready", () => {
-  console.log(`✅ Counting Bot Online: ${client.user.tag}`);
+  console.log(`✅ Join Tracker Online: ${client.user.tag}`);
 });
 
-// ───────── MESSAGE HANDLER ─────────
-client.on("messageCreate", async (message) => {
+// ───────── MEMBER JOIN ─────────
+client.on("guildMemberAdd", async (member) => {
   try {
-    if (message.author.bot) return;
-    if (message.channel.id !== COUNT_CHANNEL_ID) return;
+    const channel = member.guild.channels.cache.get(JOIN_CHANNEL);
+    if (!channel) return;
 
-    const content = message.content.trim();
+    const count = member.guild.memberCount;
 
-    // Must be a number only
-    if (!/^\d+$/.test(content)) {
-      await message.react("❌");
-      setTimeout(() => message.delete().catch(() => {}), 3000);
-      return;
-    }
+    const messages = [
+`——————————————————————————————————
 
-    const number = parseInt(content);
+${member} Has joined the legend server, where we lag together as a team 🤫
 
-    // Prevent same user twice in a row
-    if (message.author.id === lastUserId) {
-      await message.react("❌");
-      setTimeout(() => message.delete().catch(() => {}), 3000);
-      return;
-    }
+——————————————————————————————————
 
-    // Check correct number
-    if (number !== currentNumber + 1) {
-      await message.react("❌");
-      setTimeout(() => message.delete().catch(() => {}), 3000);
-      return;
-    }
+Members now: ${count}
 
-    // Valid number
-    currentNumber++;
-    lastUserId = message.author.id;
+——————————————————————————————————`,
 
-    await message.react("✅");
+`——————————————————————————————————
 
-    setTimeout(() => {
-      message.reactions.removeAll().catch(() => {});
-    }, 3000);
+Guess who managed to reach the server, ${member}! Welcome to Lagging Legends 🥝
+
+——————————————————————————————————
+
+Members now: ${count}
+
+——————————————————————————————————`,
+
+`——————————————————————————————————
+
+Another Legend arrived, and that is ${member}! Welcome to the lagging server 👋
+
+——————————————————————————————————
+
+Members now: ${count}
+
+——————————————————————————————————`,
+
+`——————————————————————————————————
+
+Another lagging member arrived, welcome ${member} to your destination, Lagging Legends! 📸
+
+——————————————————————————————————
+
+Members now: ${count}
+
+——————————————————————————————————`,
+    ];
+
+    const random = messages[Math.floor(Math.random() * messages.length)];
+    await channel.send({ content: random });
 
   } catch (err) {
-    console.error("Counting error:", err);
+    console.error("Join error:", err);
   }
 });
 
